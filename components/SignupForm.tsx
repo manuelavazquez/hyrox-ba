@@ -76,6 +76,7 @@ export default function SignupForm() {
         nivel: form.nivel,
         disponibilidad: form.disponibilidad,
         contacto: form.contacto,
+        consentimiento: true,
       };
       const res = await fetch("/api/athletes", {
         method: "POST",
