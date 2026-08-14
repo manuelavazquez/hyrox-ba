@@ -49,6 +49,7 @@ export interface Atleta {
   objetivo?: Objetivo;
   disponibilidad: Disponibilidad[];
   contacto: Contacto;
+  consentimiento: boolean;
   creadoEn: number;
 }
 

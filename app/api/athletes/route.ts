@@ -21,6 +21,7 @@ function validar(input: Partial<AtletaInput>): string | null {
   if (!input.division) return "Falta la división";
   if (!input.nivel) return "Falta el nivel";
   if (!input.contacto) return "Elegí cómo querés que te contacten";
+  if (!input.consentimiento) return "Necesitamos tu aceptación para compartir tu perfil";
   if (
     (input.contacto === "instagram" || input.contacto === "ambos") &&
     !input.instagram?.trim()
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
     objetivo: body.objetivo,
     disponibilidad: body.disponibilidad ?? [],
     contacto: body.contacto!,
+    consentimiento: Boolean(body.consentimiento),
     creadoEn: Date.now(),
   };
 
