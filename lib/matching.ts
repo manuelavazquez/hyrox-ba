@@ -46,8 +46,8 @@ function distanciaOrdinal<T>(orden: T[], a?: T, b?: T): number | null {
 
 function puntajeNivel(a: Nivel, b: Nivel): { puntos: number; motivo: string | null } {
   const distancia = distanciaOrdinal(ORDEN_NIVEL, a, b) ?? 99;
-  if (distancia === 0) return { puntos: 3, motivo: "Mismo nivel" };
-  if (distancia === 1) return { puntos: 1, motivo: "Nivel cercano" };
+  if (distancia === 0) return { puntos: 8, motivo: "Mismo nivel" };
+  if (distancia === 1) return { puntos: 4, motivo: "Nivel cercano" };
   return { puntos: 0, motivo: null };
 }
 
@@ -58,8 +58,8 @@ function puntajeRitmo(
   if (!a || !b || a === "no_seguro" || b === "no_seguro") return { puntos: 0, motivo: null };
   const distancia = distanciaOrdinal(ORDEN_RITMO, a, b);
   if (distancia === null) return { puntos: 0, motivo: null };
-  if (distancia === 0) return { puntos: 2, motivo: "Mismo ritmo de running" };
-  if (distancia === 1) return { puntos: 1, motivo: "Ritmo de running parecido" };
+  if (distancia === 0) return { puntos: 4, motivo: "Mismo ritmo de running" };
+  if (distancia === 1) return { puntos: 2, motivo: "Ritmo de running parecido" };
   return { puntos: 0, motivo: null };
 }
 
@@ -75,7 +75,7 @@ function puntajeObjetivo(
   b?: Atleta["objetivo"]
 ): { puntos: number; motivo: string | null } {
   if (!a || !b) return { puntos: 0, motivo: null };
-  if (a === b) return { puntos: 1, motivo: a === "competitivo" ? "Los dos van competitivos" : "Los dos van a divertirse" };
+  if (a === b) return { puntos: 20, motivo: a === "competitivo" ? "Los dos van competitivos" : "Los dos van a divertirse" };
   return { puntos: 0, motivo: null };
 }
 
@@ -86,7 +86,8 @@ function puntajeDisponibilidad(
   const comunes = a.filter((slot) => b.includes(slot));
   if (comunes.length === 0) return { puntos: 0, motivo: null };
   return {
-    puntos: comunes.length,
+    // Peso bajo a propósito: es el criterio de menor prioridad.
+    puntos: comunes.length * 0.5,
     motivo: `Coinciden en: ${comunes.join(", ").toLowerCase()}`,
   };
 }
@@ -120,7 +121,7 @@ export function calcularMatches(atleta: Atleta, pool: Atleta[]): Match[] {
       candidato.disponibilidad
     );
 
-    const motivos = [nivel.motivo, ritmo.motivo, disponibilidad.motivo, objetivo.motivo, edad.motivo].filter(
+    const motivos = [objetivo.motivo, nivel.motivo, ritmo.motivo, edad.motivo, disponibilidad.motivo].filter(
       (m): m is string => Boolean(m)
     );
 
