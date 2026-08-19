@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addAtleta, getAtletas } from "@/lib/kv";
 import { calcularMatches } from "@/lib/matching";
+import { avisarNuevoAtleta } from "@/lib/email";
 import type { Atleta, AtletaInput } from "@/lib/types";
 
 // El formulario vive en Framer, en otro dominio, así que la API necesita
@@ -64,6 +65,10 @@ export async function POST(req: NextRequest) {
   const pool = await getAtletas();
   const matches = calcularMatches(nuevo, pool);
   await addAtleta(nuevo);
+
+  // No esperamos a que termine de mandarse el mail para responder al
+  // usuario, así la app no se siente más lenta por esto.
+  void avisarNuevoAtleta(nuevo);
 
   return NextResponse.json({ atleta: nuevo, matches }, { headers: CORS_HEADERS });
 }
