@@ -39,6 +39,47 @@ export async function addAtleta(atleta: Atleta): Promise<void> {
   memoryStore.atletas.push(atleta);
 }
 
+// NUEVO: elimina un atleta por id (usado por el link de "ya encontré pareja").
+export async function removeAtleta(id: string): Promise<boolean> {
+  if (hasKv) {
+    const redis = await getRedis();
+    const current = (await redis.get<Atleta[]>(LIST_KEY)) ?? [];
+    const siguiente = current.filter((a) => a.id !== id);
+    const existia = siguiente.length !== current.length;
+    if (existia) await redis.set(LIST_KEY, siguiente);
+    return existia;
+  }
+  const antes = memoryStore.atletas.length;
+  memoryStore.atletas = memoryStore.atletas.filter((a) => a.id !== id);
+  return memoryStore.atletas.length !== antes;
+}
+
+// NUEVO: actualiza los campos editables de un atleta por id (usado por la
+// página de "editar mi perfil"). Mantiene id, email y creadoEn intactos.
+export async function updateAtleta(
+  id: string,
+  cambios: Partial<Omit<Atleta, "id" | "email" | "creadoEn">>
+): Promise<Atleta | null> {
+  if (hasKv) {
+    const redis = await getRedis();
+    const current = (await redis.get<Atleta[]>(LIST_KEY)) ?? [];
+    const idx = current.findIndex((a) => a.id === id);
+    if (idx === -1) return null;
+    current[idx] = { ...current[idx], ...cambios };
+    await redis.set(LIST_KEY, current);
+    return current[idx];
+  }
+  const idx = memoryStore.atletas.findIndex((a) => a.id === id);
+  if (idx === -1) return null;
+  memoryStore.atletas[idx] = { ...memoryStore.atletas[idx], ...cambios };
+  return memoryStore.atletas[idx];
+}
+
+export async function getAtletaById(id: string): Promise<Atleta | null> {
+  const atletas = await getAtletas();
+  return atletas.find((a) => a.id === id) ?? null;
+}
+
 export function isUsingFallbackStore(): boolean {
   return !hasKv;
 }

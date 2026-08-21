@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addAtleta, getAtletas } from "@/lib/kv";
 import { calcularMatches } from "@/lib/matching";
-import { avisarNuevoAtleta, avisarNuevoMatch } from "@/lib/email";
+import { avisarNuevoAtleta, avisarNuevoMatch, avisarInscripcion } from "@/lib/email";
 import type { Atleta, AtletaInput } from "@/lib/types";
 
 // El formulario vive en Framer, en otro dominio, así que la API necesita
@@ -9,8 +9,19 @@ import type { Atleta, AtletaInput } from "@/lib/types";
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, X-App-Secret",
 };
+
+// NUEVO: si está configurada, el POST solo se acepta con esta clave en el
+// header. No es una protección perfecta (la clave viaja en el código del
+// componente de Framer, alguien con ganas puede encontrarla), pero frena
+// a bots y scripts genéricos que barren APIs sin pasar por el formulario.
+const APP_SECRET = process.env.APP_SECRET;
+
+function tieneClaveValida(req: NextRequest): boolean {
+  if (!APP_SECRET) return true; // si no la configuraste, no bloqueamos nada
+  return req.headers.get("x-app-secret") === APP_SECRET;
+}
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
@@ -39,6 +50,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!tieneClaveValida(req)) {
+    return NextResponse.json(
+      { error: "No autorizado" },
+      { status: 401, headers: CORS_HEADERS }
+    );
+  }
+
   const body = (await req.json()) as Partial<AtletaInput>;
   const error = validar(body);
   if (error) {
@@ -86,6 +104,8 @@ export async function POST(req: NextRequest) {
   // No esperamos a que termine de mandarse el mail para responder al
   // usuario, así la app no se siente más lenta por esto.
   void avisarNuevoAtleta(nuevo);
+  // NUEVO: mail de confirmación con los links de editar/darse de baja.
+  void avisarInscripcion(nuevo);
 
   // Cada persona que ya estaba anotada y matchea con este perfil nuevo
   // recibe un mail avisándole. Los matches son simétricos (si A matchea

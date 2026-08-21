@@ -13,6 +13,16 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 // Remitente real ahora que el dominio está verificado en Resend.
 // Antes de verificar el dominio, esto tenía que ser "onboarding@resend.dev".
 const REMITENTE = "Hyrox BA <avisos@hyroxba.com>";
+// NUEVO: URL pública del backend, para armar los links de "editar perfil"
+// y "ya encontré pareja" dentro de los mails.
+const APP_BASE_URL = process.env.APP_BASE_URL || "https://hyrox-ba-production.up.railway.app";
+
+function linksAtleta(atletaId: string) {
+  return {
+    editar: `${APP_BASE_URL}/api/athletes/edit?id=${atletaId}`,
+    baja: `${APP_BASE_URL}/api/athletes/unsubscribe?id=${atletaId}`,
+  };
+}
 
 // Si no están configuradas las variables de entorno, no hace nada y no
 // rompe el registro del atleta, el mail es un extra, no un requisito.
@@ -45,6 +55,39 @@ export async function avisarNuevoAtleta(atleta: Atleta): Promise<void> {
   }
 }
 
+// NUEVO: mail de confirmación que recibe cada persona apenas se anota.
+// Es el único mail garantizado que le llega a todo el mundo (haya match
+// o no), así que es donde va el link para editar el perfil o darse de baja.
+export async function avisarInscripcion(atleta: Atleta): Promise<void> {
+  if (!RESEND_API_KEY) return;
+
+  try {
+    const { Resend } = await import("resend");
+    const resend = new Resend(RESEND_API_KEY);
+    const { editar, baja } = linksAtleta(atleta.id);
+
+    await resend.emails.send({
+      from: REMITENTE,
+      to: atleta.email,
+      subject: `Ya estás anotado en Hyrox BA`,
+      text: [
+        `Hola ${atleta.nombre},`,
+        ``,
+        `Quedaste anotado en Hyrox BA para buscar compañero de Doubles.`,
+        `Apenas se sume alguien compatible con tu perfil, te vamos a avisar por acá.`,
+        ``,
+        `¿Te equivocaste en algo o cambiaste de idea? Editá tu perfil:`,
+        editar,
+        ``,
+        `¿Ya encontraste compañero? Avisanos y te sacamos de la lista:`,
+        baja,
+      ].join("\n"),
+    });
+  } catch (error) {
+    console.error("No se pudo enviar el mail de inscripción:", error);
+  }
+}
+
 // NUEVO: le avisa a un atleta YA anotado que apareció alguien nuevo
 // compatible con su perfil. Se llama una vez por cada match encontrado
 // cuando se registra un atleta nuevo.
@@ -58,6 +101,7 @@ export async function avisarNuevoMatch(
   try {
     const { Resend } = await import("resend");
     const resend = new Resend(RESEND_API_KEY);
+    const { editar, baja } = linksAtleta(atletaExistente.id);
 
     const contacto = contactoVisible(atletaNuevo);
     const lineasContacto: string[] = [];
@@ -94,6 +138,10 @@ export async function avisarNuevoMatch(
         ...lineasContacto,
         ``,
         `Escribile directo cuando quieras.`,
+        ``,
+        `---`,
+        `¿Ya encontraste compañero? Avisanos y te sacamos de la lista: ${baja}`,
+        `¿Querés actualizar tu perfil? ${editar}`,
       ]
         .filter((linea): linea is string => linea !== null)
         .join("\n"),
