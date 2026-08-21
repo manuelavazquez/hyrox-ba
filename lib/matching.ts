@@ -92,7 +92,7 @@ function puntajeDisponibilidad(
   };
 }
 
-function contactoVisible(atleta: Atleta): { email?: string; instagram?: string } {
+export function contactoVisible(atleta: Atleta): { email?: string; instagram?: string } {
   const visible: { email?: string; instagram?: string } = {};
   if (atleta.contacto === "email" || atleta.contacto === "ambos") {
     visible.email = atleta.email;

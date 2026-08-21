@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addAtleta, getAtletas } from "@/lib/kv";
 import { calcularMatches } from "@/lib/matching";
-import { avisarNuevoAtleta } from "@/lib/email";
+import { avisarNuevoAtleta, avisarNuevoMatch } from "@/lib/email";
 import type { Atleta, AtletaInput } from "@/lib/types";
 
 // El formulario vive en Framer, en otro dominio, así que la API necesita
@@ -69,6 +69,16 @@ export async function POST(req: NextRequest) {
   // No esperamos a que termine de mandarse el mail para responder al
   // usuario, así la app no se siente más lenta por esto.
   void avisarNuevoAtleta(nuevo);
+
+  // NUEVO: cada persona que ya estaba anotada y matchea con este perfil
+  // nuevo recibe un mail avisándole. Los matches son simétricos (si A
+  // matchea con B, B matchea con A), así que reusamos el mismo cálculo.
+  for (const match of matches) {
+    const atletaExistente = pool.find((a) => a.id === match.atleta.id);
+    if (atletaExistente) {
+      void avisarNuevoMatch(atletaExistente, nuevo, match.motivos);
+    }
+  }
 
   return NextResponse.json({ atleta: nuevo, matches }, { headers: CORS_HEADERS });
 }
