@@ -1,5 +1,11 @@
 import type { Atleta, Match } from "./types";
-import { DIVISION_LABELS, NIVEL_LABELS } from "./types";
+import {
+  DIVISION_LABELS,
+  NIVEL_LABELS,
+  RITMO_LABELS,
+  GRUPO_EDAD_LABELS,
+  OBJETIVO_LABELS,
+} from "./types";
 import { contactoVisible } from "./matching";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -67,8 +73,20 @@ export async function avisarNuevoMatch(
         ``,
         `Se anotó ${atletaNuevo.nombre} en Hyrox BA y matchea con tu perfil.`,
         ``,
-        `Nivel: ${NIVEL_LABELS[atletaNuevo.nivel]}`,
         `División: ${DIVISION_LABELS[atletaNuevo.division]}`,
+        `Nivel: ${NIVEL_LABELS[atletaNuevo.nivel]}`,
+        atletaNuevo.ritmoRunning
+          ? `Ritmo de running: ${RITMO_LABELS[atletaNuevo.ritmoRunning]}`
+          : null,
+        atletaNuevo.grupoEdad
+          ? `Grupo de edad: ${GRUPO_EDAD_LABELS[atletaNuevo.grupoEdad]}`
+          : null,
+        atletaNuevo.objetivo
+          ? `Objetivo: ${OBJETIVO_LABELS[atletaNuevo.objetivo]}`
+          : null,
+        atletaNuevo.disponibilidad.length > 0
+          ? `Disponibilidad: ${atletaNuevo.disponibilidad.join(", ")}`
+          : null,
         atletaNuevo.zona ? `Zona: ${atletaNuevo.zona}` : null,
         motivos.length > 0 ? `Por qué matchea: ${motivos.join(", ")}` : null,
         ``,

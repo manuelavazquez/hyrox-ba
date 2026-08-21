@@ -80,3 +80,29 @@ export const NIVEL_LABELS: Record<Nivel, string> = {
   avanzado: "Avanzado",
   competitivo: "Competitivo",
 };
+
+export const RITMO_LABELS: Record<RitmoRunning, string> = {
+  menos_5: "Menos de 5:00 /km",
+  "5_530": "5:00–5:30 /km",
+  "530_600": "5:30–6:00 /km",
+  "600_630": "6:00–6:30 /km",
+  mas_630: "Más de 6:30 /km",
+  no_seguro: "No está seguro/a",
+};
+
+export const GRUPO_EDAD_LABELS: Record<GrupoEdad, string> = {
+  "24_29": "24–29",
+  "30_34": "30–34",
+  "35_39": "35–39",
+  "40_44": "40–44",
+  "45_49": "45–49",
+  "50_54": "50–54",
+  "55_59": "55–59",
+  "60_64": "60–64",
+  "65_plus": "65+",
+};
+
+export const OBJETIVO_LABELS: Record<Objetivo, string> = {
+  diversion: "Solo por diversión / terminar",
+  competitivo: "Competitivo / buscar tiempo",
+};
