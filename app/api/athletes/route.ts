@@ -45,6 +45,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error }, { status: 400, headers: CORS_HEADERS });
   }
 
+  const emailNormalizado = body.email!.trim().toLowerCase();
+  const pool = await getAtletas();
+
+  // NUEVO: si ese email ya está anotado, no creamos un perfil duplicado.
+  // Le devolvemos su perfil existente con los matches de hoy, así la
+  // pantalla puede mostrarle "ya estás anotado" en vez de un formulario
+  // que parece haber funcionado pero generó una copia de su perfil.
+  const yaExiste = pool.find(
+    (a) => a.email.trim().toLowerCase() === emailNormalizado
+  );
+  if (yaExiste) {
+    const matches = calcularMatches(yaExiste, pool);
+    return NextResponse.json(
+      { yaAnotado: true, atleta: yaExiste, matches },
+      { headers: CORS_HEADERS }
+    );
+  }
+
   const nuevo: Atleta = {
     id: crypto.randomUUID(),
     nombre: body.nombre!.trim(),
@@ -62,7 +80,6 @@ export async function POST(req: NextRequest) {
     creadoEn: Date.now(),
   };
 
-  const pool = await getAtletas();
   const matches = calcularMatches(nuevo, pool);
   await addAtleta(nuevo);
 
@@ -70,9 +87,9 @@ export async function POST(req: NextRequest) {
   // usuario, así la app no se siente más lenta por esto.
   void avisarNuevoAtleta(nuevo);
 
-  // NUEVO: cada persona que ya estaba anotada y matchea con este perfil
-  // nuevo recibe un mail avisándole. Los matches son simétricos (si A
-  // matchea con B, B matchea con A), así que reusamos el mismo cálculo.
+  // Cada persona que ya estaba anotada y matchea con este perfil nuevo
+  // recibe un mail avisándole. Los matches son simétricos (si A matchea
+  // con B, B matchea con A), así que reusamos el mismo cálculo.
   for (const match of matches) {
     const atletaExistente = pool.find((a) => a.id === match.atleta.id);
     if (atletaExistente) {
@@ -80,5 +97,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ atleta: nuevo, matches }, { headers: CORS_HEADERS });
+  return NextResponse.json(
+    { yaAnotado: false, atleta: nuevo, matches },
+    { headers: CORS_HEADERS }
+  );
 }
